@@ -5,6 +5,6 @@ def start(request):
     if request.method == "POST":
         show_picture = True
     
-    return render(request, "start.html", {
+    return render(request, "start/start.html", {
         'show_picture': show_picture
     })
