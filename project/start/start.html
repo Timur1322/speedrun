@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Кнопка</title>
+</head>
+<body>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">ТЫК</button>
+    </form>
+
+    {% if button_clicked %}
+    <img src="{% static 'images/images.jpg' %}" style="margin-top: 20px; max-width: 300px;">
+    {% endif %}
+</body>
+</html>
