@@ -1,0 +1,25 @@
+# Visual Studio
+.vs/
+*.vsidx
+*.sln
+*.suo
+*.user
+*.userosscache
+*.swp
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+db.sqlite3
+
+# Django
+staticfiles/
+media/
+
+# Прочее
+.DS_Store
+Thumbs.db
