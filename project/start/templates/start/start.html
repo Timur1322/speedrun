@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Кнопка</title>
+    {% load static %}
 </head>
 <body>
     <form method="post">
@@ -9,7 +10,7 @@
         <button type="submit">ТЫК</button>
     </form>
 
-    {% if button_clicked %}
+    {% if show_picture %}
     <img src="{% static 'images/images.jpg' %}" style="margin-top: 20px; max-width: 300px;">
     {% endif %}
 </body>
