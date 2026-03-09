@@ -1,12 +1,10 @@
 from django.shortcuts import render
 
-def start(request: HttpRequest) -> HttpResponse:
-    context = {
-        'button_clicked': False
-
-
+def start(request):
+    show_picture = False
     if request.method == "POST":
-        context['button_clicked'] = True
-
-
-    return render(request, "start.html", {"form": form})
+        show_picture = True
+    
+    return render(request, "start.html", {
+        'show_picture': show_picture
+    })
