@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'start'
 ]
-
+STATIC_URL = '/static/'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -111,9 +111,5 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
-STATIC_URL = 'static/'
-# AUTH_USER_MODEL = 'start.UserProfile'
+LOGIN_URL = 'login'
+AUTH_USER_MODEL = 'start.UserProfile'

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль</title>
+</head>
+<body>
+    <h2>Профиль</h2>
+    <p>Логин: {{ request.user.username }}</p>
+    <p>Имя: {{ profile.first_name }}</p>
+    <p>Фамилия: {{ profile.last_name }}</p>
+    <p>Роль: {{ profile.role }}</p>
+
+    {% if profile.role == 'user' %}
+        <a href="{% url 'user_page' %}">Назад</a>
+    {% else %}
+        <a href="{% url 'admin_page' %}">Назад</a>
+    {% endif %}
+</body>
+</html>

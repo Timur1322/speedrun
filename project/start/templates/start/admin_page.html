@@ -1,0 +1,30 @@
+<!-- templates/admin_page.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админ</title>
+</head>
+<body>
+    <h2>Страница администратора</h2>
+
+    <a href="{% url 'logout' %}">Выйти</a>
+
+    <h3>Создать пользователя</h3>
+    <form method="post">
+        {% csrf_token %}
+        <p>Логин:</p>
+        <input type="text" name="username">
+        <p>Пароль:</p>
+        <input type="text" name="password">
+        <p>Имя:</p>
+        <input type="text" name="first_name">
+        <p>Фамилия:</p>
+        <input type="text" name="last_name">
+        <br><br>
+        <button type="submit">Создать</button>
+    </form>
+
+    <p>{{ msg }}</p>
+</body>
+</html>

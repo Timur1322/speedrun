@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Пользователь</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>Страница пользователя</h2>
+
+    <a href="{% url 'profile' %}">Профиль</a>
+    <a href="{% url 'logout' %}">Выйти</a>
+
+    <h3>Загрузка тестового файла</h3>
+    <form id="uploadForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".npz">
+        <button type="submit">Проверить</button>
+    </form>
+
+    <p id="acc">Точность: </p>
+    <p id="loss">Потери: </p>
+
+    <h3>История загрузок</h3>
+    <ul>
+        {% for x in uploads %}
+            <li>{{ x.file_name }} | accuracy={{ x.accuracy }} | loss={{ x.loss }}</li>
+        {% empty %}
+            <li>Нет данных</li>
+        {% endfor %}
+    </ul>
+
+    <h3>Точность по эпохам</h3>
+    <canvas id="chart1" width="400" height="150"></canvas>
+
+    <h3>Количество записей по классам</h3>
+    <canvas id="chart2" width="400" height="150"></canvas>
+
+    <h3>Точность по каждой записи</h3>
+    <canvas id="chart3" width="400" height="150"></canvas>
+
+    <h3>Топ-5 классов</h3>
+    <canvas id="chart4" width="400" height="150"></canvas>
+
+    <script>
+        let history = JSON.parse('{{ history|escapejs }}');
+        let classCounts = JSON.parse('{{ class_counts|escapejs }}');
+
+        new Chart(document.getElementById('chart1'), {
+            type: 'line',
+            data: {
+                labels: [1, 2, 3, 4, 5, 6],
+                datasets: [
+                    {
+                        label: 'train accuracy',
+                        data: history.accuracy,
+                        borderColor: 'blue'
+                    },
+                    {
+                        label: 'val accuracy',
+                        data: history.val_accuracy,
+                        borderColor: 'green'
+                    }
+                ]
+            }
+        });
+
+        new Chart(document.getElementById('chart2'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(classCounts),
+                datasets: [{
+                    label: 'count',
+                    data: Object.values(classCounts),
+                    backgroundColor: 'orange'
+                }]
+            }
+        });
+
+        let chart3 = null;
+        let chart4 = null;
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            let formData = new FormData(this);
+
+            let response = await fetch("{% url 'predict' %}", {
+                method: 'POST',
+                body: formData
+            });
+
+            let data = await response.json();
+
+            document.getElementById('acc').innerText = 'Точность: ' + data.accuracy;
+            document.getElementById('loss').innerText = 'Потери: ' + data.loss;
+
+            if (chart3) chart3.destroy();
+            if (chart4) chart4.destroy();
+
+            chart3 = new Chart(document.getElementById('chart3'), {
+                type: 'bar',
+                data: {
+                    labels: data.per_sample.map((x, i) => i + 1),
+                    datasets: [{
+                        label: '1 - верно, 0 - неверно',
+                        data: data.per_sample,
+                        backgroundColor: 'purple'
+                    }]
+                }
+            });
+
+            chart4 = new Chart(document.getElementById('chart4'), {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(data.top_5),
+                    datasets: [{
+                        data: Object.values(data.top_5)
+                    }]
+                }
+            });
+        });
+    </script>
+</body>
+</html>
