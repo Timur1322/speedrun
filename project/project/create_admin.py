@@ -13,7 +13,7 @@ if not User.objects.filter(username='admin').exists():
         user=user,
         first_name='Главный',
         last_name='Админ',
-        role='admin'adsaf
+        role='admin'
     )
     print('admin created')
 else:
