@@ -13,10 +13,9 @@ from collections import Counter
 from django.conf import settings
 from django.http import JsonResponse
 from .models import UploadResult
+from try_test import main_test
 
 
-MODEL = tf.keras.models.load_model('model2.h5')
-ENCODER = joblib.load('label_encoder.pkl') 
 def login_view(request):
     msg = ''
     if request.user.is_authenticated:
@@ -124,16 +123,11 @@ def get_races_from_labels(labels_data):
     for y in labels_data:
         hi = y[:32]
         name = y[32:]
-        found = False
-        for race_id in range(50):
-            test_hash = h.md5((str(race_id) + name).encode()).hexdigest()
-            if test_hash == hi:
-                races.append(race_id)
-                found = True
-                break
-        if not found:
-            races.append(0) 
-    return np.array(races)
+        for race in range(0,50):
+            hash = h.md5((str(race)+name).encode()).hexdigest()
+            if hash == hi:
+                races.append(race)
+    return races
 
 def predict_view(request):
     if not hasattr(request.user, 'userprofile') or request.user.userprofile.role != 'user':
@@ -143,49 +137,36 @@ def predict_view(request):
         file = request.FILES['file']
         
         try:
-            # Загружаем данные из .npz
             data = np.load(file, allow_pickle=True)
-            test_x = data['valid_x']
-            test_y_raw = data.get('valid_y', None)
+            try:
+                test_x = data['valid_x']
+                test_y_raw = get_races_from_labels(data['valid_y'])
+                print(test_y_raw)
+            except Exception as e:
+                print(e)
+                test_x = data['test_x']
+                test_y_raw = data.get('test_y', None)
 
-            # Если x пришел как (N, 80000), превращаем в (N, 80000, 1)
-            if len(test_x.shape) == 2:
-                test_x = np.expand_dims(test_x, axis=-1)
+            pred_races, acc, report = main_test(test_x, test_y_raw)
+            pred_races = map(int, pred_races)
+            acc = float(acc)
+            print(type(report))
+            top_5_counts = dict(Counter(pred_races).most_common(5))
 
-            # 4. Предсказание
-            predictions_raw = MODEL.predict(test_x, verbose=0)
-            pred_indices = np.argmax(predictions_raw, axis=1)
-            # Переводим индексы обратно в названия (если нужно) или оставляем ID
-            pred_labels = ENCODER.inverse_transform(pred_indices)
-
-            top_5_counts = dict(Counter(pred_labels.tolist()).most_common(5))
-
-            accuracy = 0
-            loss = 0
-            per_sample_results = []
-
-            if test_y_raw is not None:
-                # Восстанавливаем числовые метки из хэшей
-                true_indices = get_races_from_labels(test_y_raw)
-                
-                loss, accuracy = MODEL.evaluate(test_x, true_indices, verbose=0)
-                
-                # Сравнение по каждому образцу (1 - угадали, 0 - нет)
-                per_sample_results = (pred_indices == true_indices).astype(int).tolist()
-
+            loss = 1-acc
             UploadResult.objects.create(
                 user=request.user,
                 file_name=file.name,
-                accuracy=float(accuracy),
+                accuracy=float(acc),
                 loss=float(loss)
             )
 
             return JsonResponse({
                 'status': 'success',
-                'accuracy': round(float(accuracy), 4),
+                'accuracy': round(float(acc), 4),
                 'loss': round(float(loss), 4),
                 'top_5': top_5_counts,
-                'per_sample': per_sample_results
+                'report': report
             })
 
         except Exception as e:

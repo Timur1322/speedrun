@@ -37,7 +37,7 @@
     <canvas id="chart2" width="400" height="150"></canvas>
 
     <h3>Точность по каждой записи</h3>
-    <canvas id="chart3" width="400" height="150"></canvas>
+    <p id="chart3"></p>
 
     <h3>Топ-5 классов</h3>
     <canvas id="chart4" width="400" height="150"></canvas>
@@ -97,18 +97,7 @@
 
             if (chart3) chart3.destroy();
             if (chart4) chart4.destroy();
-
-            chart3 = new Chart(document.getElementById('chart3'), {
-                type: 'bar',
-                data: {
-                    labels: data.per_sample.map((x, i) => i + 1),
-                    datasets: [{
-                        label: '1 - верно, 0 - неверно',
-                        data: data.per_sample,
-                        backgroundColor: 'purple'
-                    }]
-                }
-            });
+            document.getElementById('chart3').innerHTML = 'Логи модели: ' + data.report;
 
             chart4 = new Chart(document.getElementById('chart4'), {
                 type: 'pie',
