@@ -20,7 +20,8 @@
 ### 1. Клонирование репозитория
 Скачайте проект на локальную машину:
 ```bash
-https://github.com/Timur1322/speedrun.git
+git clone https://github.com/Timur1322/speedrun.git
+git checkout explain
 cd speedrun
 cd project
 ```
