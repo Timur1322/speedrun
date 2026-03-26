@@ -14,7 +14,7 @@ __pycache__/
 *$py.class
 venv/
 env/
-db.sqlite3
+project/py310/
 
 # Django
 staticfiles/
