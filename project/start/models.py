@@ -10,9 +10,6 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
-from django.db import models
-from django.contrib.auth.models import User
-
 
 class UploadResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -23,3 +20,8 @@ class UploadResult(models.Model):
 
     def __str__(self):
         return self.file_name
+# class Races(models.Model):
+#     res = models.ForeignKey(UploadResult, on_delete=models.CASCADE)
+#     race_name = models.CharField(max_length=20)
+#     race_freq = models.SmallIntegerField()
+

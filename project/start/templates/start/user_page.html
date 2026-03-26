@@ -17,8 +17,7 @@
         <input type="file" name="file" accept=".npz">
         <button type="submit">Проверить</button>
     </form>
-
-    <p id="acc">Точность: </p>
+    <p style="color: red">{{ msg }}</p>
     <p id="loss">Потери: </p>
 
     <h3>История загрузок</h3>
@@ -30,53 +29,34 @@
         {% endfor %}
     </ul>
 
-    <h3>Точность по эпохам</h3>
-    <canvas id="chart1" width="400" height="150"></canvas>
-
-    <h3>Количество записей по классам</h3>
-    <canvas id="chart2" width="400" height="150"></canvas>
-
     <h3>Точность по каждой записи</h3>
-    <p id="chart3"></p>
+    <h3>Метрики классификации</h3>
+<div id="reportContainer">
+    </div>
 
     <h3>Топ-5 классов</h3>
     <canvas id="chart4" width="400" height="150"></canvas>
-
+    <style>
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-family: sans-serif;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .report-table th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+        .report-table tr:nth-child(even) { background-color: #fafafa; }
+        .report-table tr:hover { background-color: #f1f1f1; }
+    </style>
     <script>
-        let history = JSON.parse('{{ history|escapejs }}');
-        let classCounts = JSON.parse('{{ class_counts|escapejs }}');
-
-        new Chart(document.getElementById('chart1'), {
-            type: 'line',
-            data: {
-                labels: [1, 2, 3, 4, 5, 6],
-                datasets: [
-                    {
-                        label: 'train accuracy',
-                        data: history.accuracy,
-                        borderColor: 'blue'
-                    },
-                    {
-                        label: 'val accuracy',
-                        data: history.val_accuracy,
-                        borderColor: 'green'
-                    }
-                ]
-            }
-        });
-
-        new Chart(document.getElementById('chart2'), {
-            type: 'bar',
-            data: {
-                labels: Object.keys(classCounts),
-                datasets: [{
-                    label: 'count',
-                    data: Object.values(classCounts),
-                    backgroundColor: 'orange'
-                }]
-            }
-        });
-
+        document.getElementById("loss").innerHTML = "Потери: "
         let chart3 = null;
         let chart4 = null;
 
@@ -89,26 +69,66 @@
                 method: 'POST',
                 body: formData
             });
-
+            
             let data = await response.json();
-
-            document.getElementById('acc').innerText = 'Точность: ' + data.accuracy;
-            document.getElementById('loss').innerText = 'Потери: ' + data.loss;
-
-            if (chart3) chart3.destroy();
-            if (chart4) chart4.destroy();
-            document.getElementById('chart3').innerHTML = 'Логи модели: ' + data.report;
-
-            chart4 = new Chart(document.getElementById('chart4'), {
-                type: 'pie',
-                data: {
-                    labels: Object.keys(data.top_5),
-                    datasets: [{
-                        data: Object.values(data.top_5)
-                    }]
+            // table
+            document.getElementById("loss").innerHTML = "Потери: "+data.loss
+            function buildReportTable(report) {
+                if (typeof report === 'string') {
+                    return `<pre>${report}</pre>`;
                 }
-            });
-        });
-    </script>
+
+                let table = `
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Класс / Метрика</th>
+                                <th>Precision</th>
+                                <th>Recall</th>
+                                <th>F1-score</th>
+                                <th>Support</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                for (let key in report) {
+                    if (key === 'accuracy') continue;
+
+                    let row = report[key];
+                    table += `
+                        <tr>
+                            <td><strong>${key}</strong></td>
+                            <td>${row.precision.toFixed(2)}</td>
+                            <td>${row.recall.toFixed(2)}</td>
+                            <td>${row['f1-score'].toFixed(2)}</td>
+                            <td>${row.support}</td>
+                        </tr>`;
+                }
+
+                // (accuracy) в конец
+                if (report.accuracy !== undefined) {
+                    table += `
+                        <tr style="background-color: #e9f5ff; font-weight: bold;">
+                            <td colspan="3">Overall Accuracy</td>
+                            <td colspan="2">${(report.accuracy * 100).toFixed(2)}%</td>
+                        </tr>`;
+                }
+
+                table += `</tbody></table>`;
+                return table;
+            }
+
+            document.getElementById('reportContainer').innerHTML = buildReportTable(data.report);
+                        chart4 = new Chart(document.getElementById('chart4'), {
+                            type: 'pie',
+                            data: {
+                                labels: Object.keys(data.top_5),
+                                datasets: [{
+                                    data: Object.values(data.top_5)
+                                }]
+                            }
+                        });
+                    });
+                </script>
 </body>
 </html>

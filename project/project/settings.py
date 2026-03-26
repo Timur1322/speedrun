@@ -113,3 +113,4 @@ USE_TZ = True
 
 LOGIN_URL = 'login'
 AUTH_USER_MODEL = 'auth.User'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

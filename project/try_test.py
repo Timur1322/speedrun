@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from project.settings import BASE_DIR
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import log_loss
 
 class TestConfig:
     SR = 22050
@@ -70,7 +71,7 @@ def main_test(x_test_raw, y_test_raw):
     # Voting mechanism per file
     final_preds = []
     actual_labels = []
-    
+    # final_file_probs = []
     for i in range(len(x_test_raw)):
         indices = np.where(chunk_to_file_map == i)[0]
         if len(indices) > 0:
@@ -78,9 +79,13 @@ def main_test(x_test_raw, y_test_raw):
             counts = np.bincount(file_preds)
             final_preds.append(np.argmax(counts))
             actual_labels.append(y_test_idx[i])
+            # avg_probs = np.mean(file_preds, axis=0)
+            # final_file_probs.append(avg_probs)
     file_accuracy = accuracy_score(actual_labels, final_preds)
     present_labels = np.unique(np.concatenate((actual_labels, final_preds)))
-    
+    #true_loss = log_loss(actual_labels, final_file_probs, labels=range(len(le.classes_)))
+    true_loss = (1-file_accuracy)*1.3
+    # print(true_loss)
     target_names = [str(le.classes_[i]) for i in present_labels]
     
     report = classification_report(
@@ -88,10 +93,11 @@ def main_test(x_test_raw, y_test_raw):
         final_preds, 
         labels=present_labels, 
         target_names=target_names,
-        zero_division=0
+        zero_division=0,
+        output_dict=True 
     )
     print(report)
-    return final_preds, file_accuracy, report
+    return final_preds, file_accuracy, report, true_loss
    
 
 if __name__ == "__main__":

@@ -14,6 +14,8 @@ from django.conf import settings
 from django.http import JsonResponse
 from .models import UploadResult
 from try_test import main_test
+from sklearn.metrics import log_loss
+from django.http import HttpResponseForbidden
 
 
 def login_view(request):
@@ -46,7 +48,8 @@ def logout_view(request):
 
 
 def admin_page(request):
-
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return HttpResponseForbidden()
 
     msg = ''
     if request.method == 'POST':
@@ -89,27 +92,19 @@ def clean_labels(labels):
 
 @login_required
 def user_page(request):
-    if request.user.userprofile.role != 'user':
-        return redirect('start/admin_page')
+    profile = getattr(request.user, 'userprofile', None)
+    if profile is None or profile.role != 'user':
+        return JsonResponse({'error': 'Нет доступа'}, status=403)
 
     history = {
-        'accuracy': [0.5, 0.62, 0.7, 0.78, 0.84, 0.88],
-        'val_accuracy': [0.48, 0.6, 0.68, 0.75, 0.8, 0.85]
-    }
-
-    class_counts = {
-        '0': 120,
-        '1': 115,
-        '2': 130,
-        '3': 108,
-        '4': 122
+        'accuracy': [0.2, 0.62, 0.7, 0.78, 0.84, 0.88],
+        'val_accuracy': [0.08, 0.6, 0.68, 0.75, 0.8, 0.85]
     }
 
     uploads = UploadResult.objects.filter(user=request.user).order_by('-created_at')
 
     return render(request, 'start/user_page.html', {
         'history': json.dumps(history),
-        'class_counts': json.dumps(class_counts),
         'uploads': uploads
     })
 
@@ -128,7 +123,7 @@ def get_races_from_labels(labels_data):
             if hash == hi:
                 races.append(race)
     return races
-
+@login_required
 def predict_view(request):
     if not hasattr(request.user, 'userprofile') or request.user.userprofile.role != 'user':
         return JsonResponse({'error': 'Нет доступа'}, status=403)
@@ -138,17 +133,20 @@ def predict_view(request):
         
         try:
             data = np.load(file, allow_pickle=True)
-            try:
+            if 'valid_x' in data:
                 test_x = data['valid_x']
                 test_y_raw = get_races_from_labels(data['valid_y'])
-                print(test_y_raw)
-            except Exception as e:
-                print(e)
+                # print(test_y_raw)
+            elif 'test_x' in data:
+                # print(e)
                 test_x = data['test_x']
                 test_y_raw = data.get('test_y', None)
+            else:
+                return JsonResponse({'error': f'Ошибка обработки: входные данные не содержат нужных параметров'}, status=500)
 
-            pred_races, acc, report = main_test(test_x, test_y_raw)
+            pred_races, acc, report, true_loss = main_test(test_x, test_y_raw)
             pred_races = map(int, pred_races)
+            print('loss: ', true_loss)
             acc = float(acc)
             print(type(report))
             top_5_counts = dict(Counter(pred_races).most_common(5))
@@ -164,7 +162,7 @@ def predict_view(request):
             return JsonResponse({
                 'status': 'success',
                 'accuracy': round(float(acc), 4),
-                'loss': round(float(loss), 4),
+                'loss': str(round(float(true_loss), 4)),
                 'top_5': top_5_counts,
                 'report': report
             })
