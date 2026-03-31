@@ -17,7 +17,7 @@ class TestConfig:
     HOP_LENGTH = 512
     MODEL_PATH = "super_ultra_radio_v12_60.keras"
     ENCODER_PATH = "super_label_encoder_60.pkl"
-    SILENCE_THRESHOLD = 0.000 
+    SILENCE_THRESHOLD = 0.005
 
 class TestingEngine:
     @staticmethod
@@ -71,7 +71,7 @@ def main_test(x_test_raw, y_test_raw):
     # Voting mechanism per file
     final_preds = []
     actual_labels = []
-    # final_file_probs = []
+    final_file_probs = []
     for i in range(len(x_test_raw)):
         indices = np.where(chunk_to_file_map == i)[0]
         if len(indices) > 0:
@@ -79,13 +79,14 @@ def main_test(x_test_raw, y_test_raw):
             counts = np.bincount(file_preds)
             final_preds.append(np.argmax(counts))
             actual_labels.append(y_test_idx[i])
+            file_chunk_probs = predictions[indices]
+            avg_probs = np.mean(file_chunk_probs, axis=0)
+            final_file_probs.append(avg_probs)
             # avg_probs = np.mean(file_preds, axis=0)
             # final_file_probs.append(avg_probs)
     file_accuracy = accuracy_score(actual_labels, final_preds)
     present_labels = np.unique(np.concatenate((actual_labels, final_preds)))
-    #true_loss = log_loss(actual_labels, final_file_probs, labels=range(len(le.classes_)))
-    true_loss = (1-file_accuracy)*1.3
-    # print(true_loss)
+    true_loss = log_loss(actual_labels, final_file_probs, labels=range(len(le.classes_)))
     target_names = [str(le.classes_[i]) for i in present_labels]
     
     report = classification_report(
@@ -105,5 +106,5 @@ if __name__ == "__main__":
     
     x_test_raw = data["test_x"]
     y_test_raw = data["test_y"]
+    # print(dict(enumerate(y_test_raw)))
     print(main_test(x_test_raw, y_test_raw))
-    
